@@ -36,7 +36,7 @@ CREATE TABLE EventTypes
     Description NVARCHAR(255) NULL
 );
 GO
-
+ -- Events created by Organisers; each event belongs to one Organiser
 CREATE TABLE Events
 (
     EventID INT IDENTITY(1,1) PRIMARY KEY,
