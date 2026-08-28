@@ -69,3 +69,9 @@ The following Part 1 documents are available in the `docs` folder:
 - 
      ## CI/CD Status
    ![CI Success](docs/ci-success.png.jpg)
+
+     ## Tech Stack
+   - Database: Microsoft SQL Server (SSMS)
+   - Planning Tools: draw.io (ERD), Markdown (API documentation)
+   - Version Control: Git & GitHub
+   - CI/CD: GitHub Actions
