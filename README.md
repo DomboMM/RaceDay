@@ -66,7 +66,16 @@ The following Part 1 documents are available in the `docs` folder:
 - Entity Framework Core
 - GitHub
 - GitHub Actions
-- 
+
+-    ## Setup Instructions
+   1. Clone this repository: `git clone <repo-url>`
+   2. Open SQL Server Management Studio (SSMS)
+   3. Open `docs/RaceDay_Database.sql`
+   4. Execute the script against a fresh database to create all tables and seed data
+   5. Review `docs/RaceDay_ERD.pdf` for the full data model
+   6. Review `docs/RaceDay_API_Endpoint_Plan.pdf` for the planned API structure
+
+      
      ## CI/CD Status
    ![CI Success](docs/ci-success.png.jpg)
 
