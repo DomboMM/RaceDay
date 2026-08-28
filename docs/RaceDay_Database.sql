@@ -7,13 +7,13 @@ BEGIN
     DROP DATABASE RaceDayDB;
 END
 GO
--- Stores all system users (Organisers and Participants), distinguished by the Role column
+
 CREATE DATABASE RaceDayDB;
 GO
 
 USE RaceDayDB;
 GO
-
+-- Stores all system users (Organisers and Participants), distinguished by the Role column
 CREATE TABLE Users
 (
     UserID INT IDENTITY(1,1) PRIMARY KEY,
