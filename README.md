@@ -67,5 +67,5 @@ The following Part 1 documents are available in the `docs` folder:
 - GitHub
 - GitHub Actions
 - 
-   ## CI/CD Status
-   ![CI Success](screenshot%202026-08-28%20161844.png)
+     ## CI/CD Status
+   ![CI Success](docs/ci-success.png.jpg)
