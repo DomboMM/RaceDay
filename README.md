@@ -75,6 +75,21 @@ The following Part 1 documents are available in the `docs` folder:
    5. Review `docs/RaceDay_ERD.pdf` for the full data model
    6. Review `docs/RaceDay_API_Endpoint_Plan.pdf` for the planned API structure
 
+
+         ## User Roles
+
+   **Organiser**
+   - Creates, edits, and deletes events
+   - Manages event categories
+   - Captures participant results
+   - Views all enrolments for their events
+
+   **Participant**
+   - Registers for an account
+   - Browses available events
+   - Enrols in an event by selecting a category
+   - Views their own enrolments and results history
+
       
      ## CI/CD Status
    ![CI Success](docs/ci-success.png.jpg)
