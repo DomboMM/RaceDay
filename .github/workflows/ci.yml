@@ -1,0 +1,33 @@
+name: RaceDay CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check required files
+        run: |
+          test -f README.md
+          test -f docs/RaceDay_ERD.pdf
+          test -f docs/RaceDay_API_Endpoint_Plan.pdf
+          test -f docs/RaceDay_Database.sql
+          echo "All required RaceDay Part 1 files are present."
+
+      - name: Validate SQL script
+        run: |
+          grep -q "CREATE TABLE Users" docs/RaceDay_Database.sql
+          grep -q "CREATE TABLE EventTypes" docs/RaceDay_Database.sql
+          grep -q "CREATE TABLE Events" docs/RaceDay_Database.sql
+          grep -q "CREATE TABLE Categories" docs/RaceDay_Database.sql
+          grep -q "CREATE TABLE Enrolments" docs/RaceDay_Database.sql
+          grep -q "CREATE TABLE Results" docs/RaceDay_Database.sql
+          echo "SQL table definitions found."
