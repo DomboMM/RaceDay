@@ -60,7 +60,7 @@ CREATE TABLE Events
         CHECK (Distance > 0)
 );
 GO
-
+ -- Distance/category options available within an event (e.g. 5km, 10km)
 CREATE TABLE Categories
 (
     CategoryID INT IDENTITY(1,1) PRIMARY KEY,
