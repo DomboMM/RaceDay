@@ -99,3 +99,9 @@ The following Part 1 documents are available in the `docs` folder:
    - Planning Tools: draw.io (ERD), Markdown (API documentation)
    - Version Control: Git & GitHub
    - CI/CD: GitHub Actions
+
+     ## Video Presentation
+
+The Part 1 video presentation for the RaceDay project is available below:
+
+[Watch the RaceDay Part 1 Video Presentation](https://youtu.be/B5_M79is2sk)
