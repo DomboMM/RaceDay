@@ -1,0 +1,33 @@
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache files
+*.cache
+*.bin
+
+# User-specific files
+*.rsuser
+*.userprefs
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+packages/
+*.nupkg
+
+# Logs
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
