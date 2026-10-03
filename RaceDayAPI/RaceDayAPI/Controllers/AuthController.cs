@@ -20,6 +20,7 @@ namespace RaceDayAPI.Controllers
             _passwordHasher = new PasswordHasher<User>();
         }
 
+        // REGISTER
         // POST: api/auth/register
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto request)
@@ -33,9 +34,11 @@ namespace RaceDayAPI.Controllers
                 return BadRequest("Required fields are missing.");
             }
 
-            if (request.Role != "Organiser" && request.Role != "Participant")
+            if (request.Role != "Organiser" &&
+                request.Role != "Participant")
             {
-                return BadRequest("Role must be Organiser or Participant.");
+                return BadRequest(
+                    "Role must be Organiser or Participant.");
             }
 
             var existingUser = await _context.Users
@@ -43,7 +46,8 @@ namespace RaceDayAPI.Controllers
 
             if (existingUser != null)
             {
-                return Conflict("A user with this email already exists.");
+                return Conflict(
+                    "A user with this email already exists.");
             }
 
             var user = new User
@@ -55,9 +59,11 @@ namespace RaceDayAPI.Controllers
                 Role = request.Role
             };
 
-            user.PasswordHash = _passwordHasher.HashPassword(
-                user,
-                request.Password);
+            // Hash password before saving it
+            user.PasswordHash =
+                _passwordHasher.HashPassword(
+                    user,
+                    request.Password);
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -73,6 +79,7 @@ namespace RaceDayAPI.Controllers
             });
         }
 
+        // LOGIN
         // POST: api/auth/login
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto request)
@@ -82,21 +89,32 @@ namespace RaceDayAPI.Controllers
 
             if (user == null)
             {
-                return Unauthorized("Invalid email or password.");
+                return Unauthorized(
+                    "Invalid email or password.");
             }
 
-            var passwordResult = _passwordHasher.VerifyHashedPassword(
-                user,
-                user.PasswordHash,
-                request.Password);
+            var passwordResult =
+                _passwordHasher.VerifyHashedPassword(
+                    user,
+                    user.PasswordHash,
+                    request.Password);
 
-            if (passwordResult == PasswordVerificationResult.Failed)
+            if (passwordResult ==
+                PasswordVerificationResult.Failed)
             {
-                return Unauthorized("Invalid email or password.");
+                return Unauthorized(
+                    "Invalid email or password.");
             }
 
-            HttpContext.Session.SetInt32("UserID", user.UserID);
-            HttpContext.Session.SetString("Role", user.Role);
+            // Store authenticated user ID and role
+            // in the server-side session.
+            HttpContext.Session.SetInt32(
+                "UserID",
+                user.UserID);
+
+            HttpContext.Session.SetString(
+                "Role",
+                user.Role);
 
             return Ok(new
             {
@@ -106,6 +124,19 @@ namespace RaceDayAPI.Controllers
                 user.LastName,
                 user.Email,
                 user.Role
+            });
+        }
+
+        // LOGOUT
+        // POST: api/auth/logout
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+
+            return Ok(new
+            {
+                message = "Logout successful."
             });
         }
     }
