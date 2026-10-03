@@ -18,11 +18,19 @@ namespace RaceDayAPI.Controllers
 
         // ==========================================
         // GET ALL CATEGORIES
+        // Organiser and Participant
         // GET: api/Categories
         // ==========================================
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
         {
+            int? userId = HttpContext.Session.GetInt32("UserID");
+
+            if (userId == null)
+            {
+                return Unauthorized("Please log in first.");
+            }
+
             var categories = await _context.Categories
                 .Include(c => c.Event)
                 .ToListAsync();
@@ -30,37 +38,76 @@ namespace RaceDayAPI.Controllers
             return Ok(categories);
         }
 
-
         // ==========================================
         // GET ONE CATEGORY
+        // Organiser and Participant
         // GET: api/Categories/5
         // ==========================================
         [HttpGet("{id}")]
         public async Task<ActionResult<Category>> GetCategory(int id)
         {
+            int? userId = HttpContext.Session.GetInt32("UserID");
+
+            if (userId == null)
+            {
+                return Unauthorized("Please log in first.");
+            }
+
             var category = await _context.Categories
                 .Include(c => c.Event)
                 .FirstOrDefaultAsync(c => c.CategoryID == id);
 
             if (category == null)
             {
-                return NotFound();
+                return NotFound("Category not found.");
             }
 
             return Ok(category);
         }
 
-
         // ==========================================
         // CREATE CATEGORY
+        // Organiser only
         // POST: api/Categories
         // ==========================================
         [HttpPost]
         public async Task<ActionResult<Category>> CreateCategory(
             Category category)
         {
-            _context.Categories.Add(category);
+            int? userId = HttpContext.Session.GetInt32("UserID");
+            string? role = HttpContext.Session.GetString("Role");
 
+            if (userId == null)
+            {
+                return Unauthorized("Please log in first.");
+            }
+
+            if (role != "Organiser")
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "Only Organisers can create categories.");
+            }
+
+            // Check that the event exists and belongs
+            // to the logged-in organiser.
+            var raceEvent = await _context.Events
+                .FirstOrDefaultAsync(
+                    e => e.EventID == category.EventID);
+
+            if (raceEvent == null)
+            {
+                return BadRequest("The selected event does not exist.");
+            }
+
+            if (raceEvent.OrganiserID != userId.Value)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "You can only create categories for your own events.");
+            }
+
+            _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(
@@ -69,63 +116,116 @@ namespace RaceDayAPI.Controllers
                 category);
         }
 
-
         // ==========================================
         // UPDATE CATEGORY
+        // Organiser only - own events
         // PUT: api/Categories/5
         // ==========================================
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCategory(
             int id,
-            Category category)
+            Category updatedCategory)
         {
-            if (id != category.CategoryID)
+            int? userId = HttpContext.Session.GetInt32("UserID");
+            string? role = HttpContext.Session.GetString("Role");
+
+            if (userId == null)
             {
-                return BadRequest();
+                return Unauthorized("Please log in first.");
             }
 
-            _context.Entry(category).State =
-                EntityState.Modified;
-
-            try
+            if (role != "Organiser")
             {
-                await _context.SaveChangesAsync();
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "Only Organisers can update categories.");
             }
-            catch (DbUpdateConcurrencyException)
+
+            var existingCategory = await _context.Categories
+                .Include(c => c.Event)
+                .FirstOrDefaultAsync(c => c.CategoryID == id);
+
+            if (existingCategory == null)
             {
-                bool categoryExists =
-                    await _context.Categories
-                    .AnyAsync(c => c.CategoryID == id);
-
-                if (!categoryExists)
-                {
-                    return NotFound();
-                }
-
-                throw;
+                return NotFound("Category not found.");
             }
+
+            if (existingCategory.Event == null ||
+                existingCategory.Event.OrganiserID != userId.Value)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "You can only update categories for your own events.");
+            }
+
+            // Prevent moving a category to another
+            // organiser's event.
+            var targetEvent = await _context.Events
+                .FirstOrDefaultAsync(
+                    e => e.EventID == updatedCategory.EventID);
+
+            if (targetEvent == null)
+            {
+                return BadRequest("The selected event does not exist.");
+            }
+
+            if (targetEvent.OrganiserID != userId.Value)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "You can only use your own events.");
+            }
+
+            existingCategory.EventID = updatedCategory.EventID;
+            existingCategory.CategoryName = updatedCategory.CategoryName;
+            existingCategory.CategoryType = updatedCategory.CategoryType;
+
+            await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-
         // ==========================================
         // DELETE CATEGORY
+        // Organiser only - own events
         // DELETE: api/Categories/5
         // ==========================================
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
-            var category =
-                await _context.Categories.FindAsync(id);
+            int? userId = HttpContext.Session.GetInt32("UserID");
+            string? role = HttpContext.Session.GetString("Role");
+
+            if (userId == null)
+            {
+                return Unauthorized("Please log in first.");
+            }
+
+            if (role != "Organiser")
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "Only Organisers can delete categories.");
+            }
+
+            var category = await _context.Categories
+                .Include(c => c.Event)
+                .FirstOrDefaultAsync(c => c.CategoryID == id);
 
             if (category == null)
             {
-                return NotFound();
+                return NotFound("Category not found.");
+            }
+
+            if (category.Event == null ||
+                category.Event.OrganiserID != userId.Value)
+            {
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    "You can only delete categories from your own events.");
             }
 
             _context.Categories.Remove(category);
-
             await _context.SaveChangesAsync();
 
             return NoContent();
