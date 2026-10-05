@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaceDayAPI.Controllers;
@@ -20,6 +21,25 @@ namespace RaceDayAPI.Tests
             return new RaceDayDbContext(options);
         }
 
+        private AuthController CreateControllerWithSession(
+            RaceDayDbContext context)
+        {
+            var controller = new AuthController(context);
+
+            var httpContext = new DefaultHttpContext();
+
+            var session = new TestSession();
+
+            httpContext.Session = session;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            return controller;
+        }
+
         // ==========================================
         // TEST 1
         // Valid Organiser registration
@@ -27,7 +47,6 @@ namespace RaceDayAPI.Tests
         [Fact]
         public async Task Register_ValidOrganiser_ReturnsCreated()
         {
-            // Arrange
             using var context = CreateContext();
 
             var controller = new AuthController(context);
@@ -42,10 +61,8 @@ namespace RaceDayAPI.Tests
                 Role = "Organiser"
             };
 
-            // Act
             var result = await controller.Register(request);
 
-            // Assert
             var createdResult =
                 Assert.IsType<CreatedResult>(result);
 
@@ -63,7 +80,6 @@ namespace RaceDayAPI.Tests
                 "Organiser",
                 savedUser.Role);
 
-            // Password must be hashed.
             Assert.NotEqual(
                 "TestPassword123!",
                 savedUser.PasswordHash);
@@ -75,12 +91,11 @@ namespace RaceDayAPI.Tests
 
         // ==========================================
         // TEST 2
-        // Invalid role must be rejected
+        // Invalid role
         // ==========================================
         [Fact]
         public async Task Register_InvalidRole_ReturnsBadRequest()
         {
-            // Arrange
             using var context = CreateContext();
 
             var controller = new AuthController(context);
@@ -95,10 +110,8 @@ namespace RaceDayAPI.Tests
                 Role = "Admin"
             };
 
-            // Act
             var result = await controller.Register(request);
 
-            // Assert
             var badRequest =
                 Assert.IsType<BadRequestObjectResult>(result);
 
@@ -106,7 +119,6 @@ namespace RaceDayAPI.Tests
                 StatusCodes.Status400BadRequest,
                 badRequest.StatusCode);
 
-            // Make sure invalid user was not saved.
             var savedUser = await context.Users
                 .FirstOrDefaultAsync(
                     u => u.Email == "invalidrole@test.com");
@@ -116,12 +128,11 @@ namespace RaceDayAPI.Tests
 
         // ==========================================
         // TEST 3
-        // Duplicate email must be rejected
+        // Duplicate email
         // ==========================================
         [Fact]
         public async Task Register_DuplicateEmail_ReturnsConflict()
         {
-            // Arrange
             using var context = CreateContext();
 
             context.Users.Add(new User
@@ -148,10 +159,8 @@ namespace RaceDayAPI.Tests
                 Role = "Participant"
             };
 
-            // Act
             var result = await controller.Register(request);
 
-            // Assert
             var conflict =
                 Assert.IsType<ConflictObjectResult>(result);
 
@@ -159,13 +168,219 @@ namespace RaceDayAPI.Tests
                 StatusCodes.Status409Conflict,
                 conflict.StatusCode);
 
-            // There must still only be one account
-            // using this email address.
             var userCount = await context.Users
                 .CountAsync(
                     u => u.Email == "existing@test.com");
 
             Assert.Equal(1, userCount);
+        }
+
+        // ==========================================
+        // TEST 4
+        // Valid login
+        // Session stores UserID and Role
+        // ==========================================
+        [Fact]
+        public async Task Login_ValidCredentials_ReturnsOkAndStoresSession()
+        {
+            using var context = CreateContext();
+
+            var user = new User
+            {
+                FirstName = "Login",
+                LastName = "Organiser",
+                Email = "login@test.com",
+                PhoneNumber = "0712345678",
+                Role = "Organiser"
+            };
+
+            var passwordHasher = new PasswordHasher<User>();
+
+            user.PasswordHash =
+                passwordHasher.HashPassword(
+                    user,
+                    "CorrectPassword123!");
+
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+
+            var controller =
+                CreateControllerWithSession(context);
+
+            var request = new LoginDto
+            {
+                Email = "login@test.com",
+                Password = "CorrectPassword123!"
+            };
+
+            var result = await controller.Login(request);
+
+            var okResult =
+                Assert.IsType<OkObjectResult>(result);
+
+            Assert.Equal(
+                StatusCodes.Status200OK,
+                okResult.StatusCode);
+
+            var sessionUserId =
+                controller.HttpContext.Session
+                    .GetInt32("UserID");
+
+            var sessionRole =
+                controller.HttpContext.Session
+                    .GetString("Role");
+
+            Assert.Equal(
+                user.UserID,
+                sessionUserId);
+
+            Assert.Equal(
+                "Organiser",
+                sessionRole);
+        }
+
+        // ==========================================
+        // TEST 5
+        // Wrong password
+        // ==========================================
+        [Fact]
+        public async Task Login_WrongPassword_ReturnsUnauthorized()
+        {
+            using var context = CreateContext();
+
+            var user = new User
+            {
+                FirstName = "Login",
+                LastName = "Participant",
+                Email = "participant@test.com",
+                PhoneNumber = "0712345678",
+                Role = "Participant"
+            };
+
+            var passwordHasher = new PasswordHasher<User>();
+
+            user.PasswordHash =
+                passwordHasher.HashPassword(
+                    user,
+                    "CorrectPassword123!");
+
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+
+            var controller =
+                CreateControllerWithSession(context);
+
+            var request = new LoginDto
+            {
+                Email = "participant@test.com",
+                Password = "WrongPassword123!"
+            };
+
+            var result = await controller.Login(request);
+
+            var unauthorizedResult =
+                Assert.IsType<UnauthorizedObjectResult>(result);
+
+            Assert.Equal(
+                StatusCodes.Status401Unauthorized,
+                unauthorizedResult.StatusCode);
+
+            Assert.Null(
+                controller.HttpContext.Session
+                    .GetInt32("UserID"));
+        }
+
+        // ==========================================
+        // TEST 6
+        // Unknown email
+        // ==========================================
+        [Fact]
+        public async Task Login_UnknownEmail_ReturnsUnauthorized()
+        {
+            using var context = CreateContext();
+
+            var controller =
+                CreateControllerWithSession(context);
+
+            var request = new LoginDto
+            {
+                Email = "unknown@test.com",
+                Password = "Password123!"
+            };
+
+            var result = await controller.Login(request);
+
+            var unauthorizedResult =
+                Assert.IsType<UnauthorizedObjectResult>(result);
+
+            Assert.Equal(
+                StatusCodes.Status401Unauthorized,
+                unauthorizedResult.StatusCode);
+        }
+    }
+
+    // ==========================================
+    // TEST SESSION
+    //
+    // Provides an in-memory implementation of
+    // ASP.NET Core ISession for controller tests.
+    // ==========================================
+    public class TestSession : ISession
+    {
+        private readonly Dictionary<string, byte[]> _sessionStorage =
+            new Dictionary<string, byte[]>();
+
+        public IEnumerable<string> Keys =>
+            _sessionStorage.Keys;
+
+        public string Id =>
+            Guid.NewGuid().ToString();
+
+        public bool IsAvailable => true;
+
+        public void Clear()
+        {
+            _sessionStorage.Clear();
+        }
+
+        public Task CommitAsync(
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task LoadAsync(
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public void Remove(string key)
+        {
+            _sessionStorage.Remove(key);
+        }
+
+        public void Set(
+            string key,
+            byte[] value)
+        {
+            _sessionStorage[key] = value;
+        }
+
+        public bool TryGetValue(
+            string key,
+            out byte[] value)
+        {
+            if (_sessionStorage.TryGetValue(
+                key,
+                out var storedValue))
+            {
+                value = storedValue;
+                return true;
+            }
+
+            value = Array.Empty<byte>();
+            return false;
         }
     }
 }
