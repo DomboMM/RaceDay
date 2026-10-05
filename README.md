@@ -277,13 +277,7 @@ A successful workflow confirms that the application builds and the automated tes
 ### <img width="1018" height="77" alt="ci-part2-success" src="https://github.com/user-attachments/assets/49f7166a-4e48-4353-b4af-c7c645060718" />
 
 
-Add the latest successful GitHub Actions screenshot to the `docs` folder using the filename:
 
-`ci-part2-success.png`
-
-Then the screenshot will display here:
-
-![Successful RaceDay Part 2 CI Build](docs/ci-part2-success.png)
 
 ---
 
