@@ -11,10 +11,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ==========================================
+      # CHECKOUT
+      # ==========================================
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check required files
+      # ==========================================
+      # PART 1 VALIDATION
+      # ==========================================
+      - name: Check required Part 1 files
         run: |
           test -f README.md
           test -f docs/RaceDay_ERD.pdf
@@ -31,3 +37,29 @@ jobs:
           grep -q "CREATE TABLE Enrolments" docs/RaceDay_Database.sql
           grep -q "CREATE TABLE Results" docs/RaceDay_Database.sql
           echo "SQL table definitions found."
+
+      # ==========================================
+      # PART 2 - .NET SETUP
+      # ==========================================
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # ==========================================
+      # RESTORE
+      # ==========================================
+      - name: Restore dependencies
+        run: dotnet restore RaceDayAPI/RaceDayAPI.slnx
+
+      # ==========================================
+      # BUILD
+      # ==========================================
+      - name: Build solution
+        run: dotnet build RaceDayAPI/RaceDayAPI.slnx --configuration Release --no-restore
+
+      # ==========================================
+      # UNIT TESTS
+      # ==========================================
+      - name: Run unit tests
+        run: dotnet test RaceDayAPI/RaceDayAPI.slnx --configuration Release --no-build --verbosity normal
