@@ -5,6 +5,9 @@ using RaceDayAPI.Models;
 
 namespace RaceDayAPI.Controllers
 {
+    /// <summary>
+    /// Handles event enrolments for RaceDay Participants and Organisers.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class EnrolmentsController : ControllerBase
@@ -16,18 +19,21 @@ namespace RaceDayAPI.Controllers
             _context = context;
         }
 
-        // ==========================================
-        // GET ENROLMENTS
-        //
-        // Organiser:
-        // Sees enrolments for their own events.
-        //
-        // Participant:
-        // Sees their own enrolments.
-        //
-        // GET: api/Enrolments
-        // ==========================================
+        /// <summary>
+        /// Gets event enrolments available to the logged-in user.
+        /// </summary>
+        /// <remarks>
+        /// Participants receive only their own enrolments.
+        /// Organisers receive enrolments belonging to their own events.
+        /// </remarks>
+        /// <returns>A list of enrolments accessible to the current user.</returns>
+        /// <response code="200">Enrolments retrieved successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user has an invalid role.</response>
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<IEnumerable<Enrolment>>> GetEnrolments()
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
@@ -67,16 +73,25 @@ namespace RaceDayAPI.Controllers
                 "Invalid user role.");
         }
 
-        // ==========================================
-        // GET ONE ENROLMENT
-        //
-        // Participant can view their own enrolment.
-        // Organiser can view enrolments for their
-        // own events.
-        //
-        // GET: api/Enrolments/5
-        // ==========================================
+        /// <summary>
+        /// Gets a specific event enrolment.
+        /// </summary>
+        /// <remarks>
+        /// A Participant can only view their own enrolment.
+        /// An Organiser can only view an enrolment belonging to
+        /// one of their own events.
+        /// </remarks>
+        /// <param name="id">The ID of the enrolment to retrieve.</param>
+        /// <returns>The requested enrolment.</returns>
+        /// <response code="200">Enrolment retrieved successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user is not allowed to view the enrolment.</response>
+        /// <response code="404">The enrolment could not be found.</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Enrolment>> GetEnrolment(int id)
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
@@ -128,13 +143,30 @@ namespace RaceDayAPI.Controllers
                 "Invalid user role.");
         }
 
-        // ==========================================
-        // CREATE ENROLMENT
-        // Participant only
-        //
-        // POST: api/Enrolments
-        // ==========================================
+        /// <summary>
+        /// Enrols a Participant in an event.
+        /// </summary>
+        /// <remarks>
+        /// Only authenticated Participants can enrol.
+        /// The Participant ID is obtained from the server-side session.
+        /// The selected category must belong to the selected event,
+        /// and duplicate enrolment in the same event is prevented.
+        /// </remarks>
+        /// <param name="enrolment">
+        /// The selected event and category information.
+        /// </param>
+        /// <returns>The newly created enrolment.</returns>
+        /// <response code="201">Participant enrolled successfully.</response>
+        /// <response code="400">The event or category is invalid.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">Only Participants can enrol in events.</response>
+        /// <response code="409">The Participant is already enrolled in the event.</response>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<Enrolment>> CreateEnrolment(
             Enrolment enrolment)
         {
@@ -153,18 +185,16 @@ namespace RaceDayAPI.Controllers
                     "Only Participants can enrol in events.");
             }
 
-            // Make sure the event exists.
             var raceEvent = await _context.Events
                 .FirstOrDefaultAsync(
                     e => e.EventID == enrolment.EventID);
 
             if (raceEvent == null)
             {
-                return BadRequest("The selected event does not exist.");
+                return BadRequest(
+                    "The selected event does not exist.");
             }
 
-            // Make sure the category exists and belongs
-            // to the selected event.
             var category = await _context.Categories
                 .FirstOrDefaultAsync(
                     c => c.CategoryID == enrolment.CategoryID &&
@@ -176,7 +206,6 @@ namespace RaceDayAPI.Controllers
                     "The selected category does not belong to this event.");
             }
 
-            // Prevent duplicate enrolment in the same event.
             bool alreadyEnrolled = await _context.Enrolments
                 .AnyAsync(e =>
                     e.ParticipantID == userId.Value &&
@@ -188,8 +217,6 @@ namespace RaceDayAPI.Controllers
                     "You are already enrolled in this event.");
             }
 
-            // Never trust ParticipantID from the request.
-            // Use the logged-in Participant instead.
             enrolment.ParticipantID = userId.Value;
             enrolment.EnrolmentDate = DateTime.UtcNow;
 
@@ -202,14 +229,23 @@ namespace RaceDayAPI.Controllers
                 enrolment);
         }
 
-        // ==========================================
-        // DELETE ENROLMENT
-        //
-        // Participant can cancel their own enrolment.
-        //
-        // DELETE: api/Enrolments/5
-        // ==========================================
+        /// <summary>
+        /// Cancels a Participant's event enrolment.
+        /// </summary>
+        /// <remarks>
+        /// Only an authenticated Participant can cancel an enrolment,
+        /// and the Participant can only cancel their own enrolment.
+        /// </remarks>
+        /// <param name="id">The ID of the enrolment to cancel.</param>
+        /// <response code="204">Enrolment cancelled successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The user cannot cancel this enrolment.</response>
+        /// <response code="404">The enrolment could not be found.</response>
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteEnrolment(int id)
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
