@@ -5,6 +5,9 @@ using RaceDayAPI.Models;
 
 namespace RaceDayAPI.Controllers
 {
+    /// <summary>
+    /// Handles category viewing and management for RaceDay events.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class CategoriesController : ControllerBase
@@ -16,12 +19,19 @@ namespace RaceDayAPI.Controllers
             _context = context;
         }
 
-        // ==========================================
-        // GET ALL CATEGORIES
-        // Organiser and Participant
-        // GET: api/Categories
-        // ==========================================
+        /// <summary>
+        /// Gets all available event categories.
+        /// </summary>
+        /// <remarks>
+        /// Both authenticated Organisers and Participants can view
+        /// the available categories.
+        /// </remarks>
+        /// <returns>A list of all event categories.</returns>
+        /// <response code="200">Categories retrieved successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
@@ -38,12 +48,22 @@ namespace RaceDayAPI.Controllers
             return Ok(categories);
         }
 
-        // ==========================================
-        // GET ONE CATEGORY
-        // Organiser and Participant
-        // GET: api/Categories/5
-        // ==========================================
+        /// <summary>
+        /// Gets a specific event category.
+        /// </summary>
+        /// <remarks>
+        /// Both authenticated Organisers and Participants can view
+        /// the details of a specific category.
+        /// </remarks>
+        /// <param name="id">The ID of the category to retrieve.</param>
+        /// <returns>The requested category and its related event.</returns>
+        /// <response code="200">Category retrieved successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="404">The category could not be found.</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Category>> GetCategory(int id)
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
@@ -65,12 +85,30 @@ namespace RaceDayAPI.Controllers
             return Ok(category);
         }
 
-        // ==========================================
-        // CREATE CATEGORY
-        // Organiser only
-        // POST: api/Categories
-        // ==========================================
+        /// <summary>
+        /// Creates a category for an event.
+        /// </summary>
+        /// <remarks>
+        /// Only an authenticated Organiser can create a category.
+        /// The Organiser can only create categories for events that
+        /// belong to their own account.
+        /// </remarks>
+        /// <param name="category">
+        /// The category information, including the event ID,
+        /// category name and category type.
+        /// </param>
+        /// <returns>The newly created category.</returns>
+        /// <response code="201">Category created successfully.</response>
+        /// <response code="400">The selected event does not exist.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">
+        /// The user is not an Organiser or does not own the event.
+        /// </response>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Category>> CreateCategory(
             Category category)
         {
@@ -89,15 +127,14 @@ namespace RaceDayAPI.Controllers
                     "Only Organisers can create categories.");
             }
 
-            // Check that the event exists and belongs
-            // to the logged-in organiser.
             var raceEvent = await _context.Events
                 .FirstOrDefaultAsync(
                     e => e.EventID == category.EventID);
 
             if (raceEvent == null)
             {
-                return BadRequest("The selected event does not exist.");
+                return BadRequest(
+                    "The selected event does not exist.");
             }
 
             if (raceEvent.OrganiserID != userId.Value)
@@ -116,12 +153,31 @@ namespace RaceDayAPI.Controllers
                 category);
         }
 
-        // ==========================================
-        // UPDATE CATEGORY
-        // Organiser only - own events
-        // PUT: api/Categories/5
-        // ==========================================
+        /// <summary>
+        /// Updates an existing event category.
+        /// </summary>
+        /// <remarks>
+        /// Only an authenticated Organiser can update a category.
+        /// The category must belong to one of the Organiser's own events.
+        /// A category cannot be moved to another Organiser's event.
+        /// </remarks>
+        /// <param name="id">The ID of the category to update.</param>
+        /// <param name="updatedCategory">
+        /// The updated event ID, category name and category type.
+        /// </param>
+        /// <response code="204">Category updated successfully.</response>
+        /// <response code="400">The selected event does not exist.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">
+        /// The user is not an Organiser or does not own the event.
+        /// </response>
+        /// <response code="404">The category could not be found.</response>
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateCategory(
             int id,
             Category updatedCategory)
@@ -158,15 +214,14 @@ namespace RaceDayAPI.Controllers
                     "You can only update categories for your own events.");
             }
 
-            // Prevent moving a category to another
-            // organiser's event.
             var targetEvent = await _context.Events
                 .FirstOrDefaultAsync(
                     e => e.EventID == updatedCategory.EventID);
 
             if (targetEvent == null)
             {
-                return BadRequest("The selected event does not exist.");
+                return BadRequest(
+                    "The selected event does not exist.");
             }
 
             if (targetEvent.OrganiserID != userId.Value)
@@ -176,21 +231,39 @@ namespace RaceDayAPI.Controllers
                     "You can only use your own events.");
             }
 
-            existingCategory.EventID = updatedCategory.EventID;
-            existingCategory.CategoryName = updatedCategory.CategoryName;
-            existingCategory.CategoryType = updatedCategory.CategoryType;
+            existingCategory.EventID =
+                updatedCategory.EventID;
+
+            existingCategory.CategoryName =
+                updatedCategory.CategoryName;
+
+            existingCategory.CategoryType =
+                updatedCategory.CategoryType;
 
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        // ==========================================
-        // DELETE CATEGORY
-        // Organiser only - own events
-        // DELETE: api/Categories/5
-        // ==========================================
+        /// <summary>
+        /// Deletes an event category.
+        /// </summary>
+        /// <remarks>
+        /// Only an authenticated Organiser can delete a category,
+        /// and the category must belong to one of their own events.
+        /// </remarks>
+        /// <param name="id">The ID of the category to delete.</param>
+        /// <response code="204">Category deleted successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">
+        /// The user is not an Organiser or does not own the event.
+        /// </response>
+        /// <response code="404">The category could not be found.</response>
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
