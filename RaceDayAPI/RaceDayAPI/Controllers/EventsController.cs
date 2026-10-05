@@ -5,6 +5,9 @@ using RaceDayAPI.Models;
 
 namespace RaceDayAPI.Controllers
 {
+    /// <summary>
+    /// Handles RaceDay event viewing and management.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class EventsController : ControllerBase
@@ -16,12 +19,19 @@ namespace RaceDayAPI.Controllers
             _context = context;
         }
 
-        // ==========================================
-        // GET ALL EVENTS
-        // Both Organisers and Participants
-        // GET: api/Events
-        // ==========================================
+        /// <summary>
+        /// Gets all RaceDay events.
+        /// </summary>
+        /// <remarks>
+        /// Both authenticated Organisers and Participants can view
+        /// the available events.
+        /// </remarks>
+        /// <returns>A list of all available events.</returns>
+        /// <response code="200">Events retrieved successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<IEnumerable<Event>>> GetEvents()
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
@@ -38,12 +48,22 @@ namespace RaceDayAPI.Controllers
             return Ok(events);
         }
 
-        // ==========================================
-        // GET ONE EVENT
-        // Both Organisers and Participants
-        // GET: api/Events/5
-        // ==========================================
+        /// <summary>
+        /// Gets a specific RaceDay event.
+        /// </summary>
+        /// <remarks>
+        /// Both authenticated Organisers and Participants can view
+        /// the details of a specific event.
+        /// </remarks>
+        /// <param name="id">The ID of the event to retrieve.</param>
+        /// <returns>The requested event and its event type.</returns>
+        /// <response code="200">Event retrieved successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="404">The event could not be found.</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Event>> GetEvent(int id)
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
@@ -65,12 +85,26 @@ namespace RaceDayAPI.Controllers
             return Ok(raceEvent);
         }
 
-        // ==========================================
-        // CREATE EVENT
-        // Organiser only
-        // POST: api/Events
-        // ==========================================
+        /// <summary>
+        /// Creates a new RaceDay event.
+        /// </summary>
+        /// <remarks>
+        /// Only an authenticated Organiser can create an event.
+        /// The Organiser ID is taken from the current session rather
+        /// than trusted from the request body.
+        /// </remarks>
+        /// <param name="raceEvent">
+        /// The event information, including event type, name,
+        /// description, date, location and distance.
+        /// </param>
+        /// <returns>The newly created event.</returns>
+        /// <response code="201">Event created successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">The logged-in user is not an Organiser.</response>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Event>> CreateEvent(Event raceEvent)
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
@@ -88,7 +122,6 @@ namespace RaceDayAPI.Controllers
                     "Only Organisers can create events.");
             }
 
-            // The organiser is taken from the logged-in session.
             raceEvent.OrganiserID = userId.Value;
 
             _context.Events.Add(raceEvent);
@@ -100,12 +133,30 @@ namespace RaceDayAPI.Controllers
                 raceEvent);
         }
 
-        // ==========================================
-        // UPDATE EVENT
-        // Organiser only - own events
-        // PUT: api/Events/5
-        // ==========================================
+        /// <summary>
+        /// Updates an existing RaceDay event.
+        /// </summary>
+        /// <remarks>
+        /// Only an authenticated Organiser can update an event,
+        /// and the Organiser can only update an event that belongs
+        /// to their own account.
+        /// </remarks>
+        /// <param name="id">The ID of the event to update.</param>
+        /// <param name="updatedEvent">
+        /// The updated event type, name, description, date,
+        /// location and distance.
+        /// </param>
+        /// <response code="204">Event updated successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">
+        /// The user is not an Organiser or does not own the event.
+        /// </response>
+        /// <response code="404">The event could not be found.</response>
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateEvent(
             int id,
             Event updatedEvent)
@@ -152,12 +203,25 @@ namespace RaceDayAPI.Controllers
             return NoContent();
         }
 
-        // ==========================================
-        // DELETE EVENT
-        // Organiser only - own events
-        // DELETE: api/Events/5
-        // ==========================================
+        /// <summary>
+        /// Deletes a RaceDay event.
+        /// </summary>
+        /// <remarks>
+        /// Only an authenticated Organiser can delete an event,
+        /// and the Organiser can only delete their own event.
+        /// </remarks>
+        /// <param name="id">The ID of the event to delete.</param>
+        /// <response code="204">Event deleted successfully.</response>
+        /// <response code="401">The user is not logged in.</response>
+        /// <response code="403">
+        /// The user is not an Organiser or does not own the event.
+        /// </response>
+        /// <response code="404">The event could not be found.</response>
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteEvent(int id)
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
