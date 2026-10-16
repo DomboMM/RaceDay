@@ -453,7 +453,7 @@ The Part 2 video will demonstrate:
 - GitHub Actions CI/CD.
 - Code structure and explanation.
 
-**Part 2 YouTube Video:** Add unlisted YouTube link here before final submission.
+Part 2 YouTube Video:https://youtu.be/GBfjOYkFZMs.
 
 ---
 
