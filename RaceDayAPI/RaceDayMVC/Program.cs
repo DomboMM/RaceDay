@@ -10,7 +10,12 @@ builder.Services.AddHttpClient<RaceDayMVC.Services.RaceDayApiService>(
         client.BaseAddress = new Uri(
             builder.Configuration["RaceDayApi:BaseUrl"]
             ?? "https://localhost:7136/");
-    });
+    })
+    .ConfigurePrimaryHttpMessageHandler(() =>
+        new HttpClientHandler
+        {
+            UseCookies = false
+        });
 
 // Add session services
 builder.Services.AddDistributedMemoryCache();
