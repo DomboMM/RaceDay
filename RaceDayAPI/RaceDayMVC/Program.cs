@@ -4,12 +4,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Add HttpClient for communication with RaceDayAPI
-builder.Services.AddHttpClient("RaceDayAPI", client =>
-{
-    client.BaseAddress = new Uri(
-        builder.Configuration["RaceDayApi:BaseUrl"]
-        ?? "https://localhost:7136/");
-});
+builder.Services.AddHttpClient<RaceDayMVC.Services.RaceDayApiService>(
+    client =>
+    {
+        client.BaseAddress = new Uri(
+            builder.Configuration["RaceDayApi:BaseUrl"]
+            ?? "https://localhost:7136/");
+    });
 
 // Add session services
 builder.Services.AddDistributedMemoryCache();
