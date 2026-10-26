@@ -61,9 +61,11 @@ namespace RaceDayMVC.Controllers
                 }
                 else
                 {
+                    var errorDetails = await response.Content.ReadAsStringAsync();
+
                     ModelState.AddModelError(
                         "",
-                        "Registration failed. Please check your details.");
+                        $"API Error {(int)response.StatusCode}: {errorDetails}");
                 }
             }
             catch (HttpRequestException)
