@@ -1,0 +1,124 @@
+﻿@model List<RaceDayMVC.Models.EventViewModel>
+
+@{
+    ViewData["Title"] = "Organiser Dashboard";
+
+    var totalEvents = Model.Count;
+
+    var upcomingEvents = Model.Count(e =>
+        e.EventDate >= DateTime.Today);
+}
+
+<div class="container mt-4">
+
+    <h2 class="fw-bold mb-2">Organiser Dashboard</h2>
+
+    <p class="text-muted mb-4">
+        Manage your RaceDay events and upcoming activities.
+    </p>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.ErrorMessage
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5>Total Events</h5>
+                    <h2 class="text-primary">@totalEvents</h2>
+                    <p class="text-muted">Your organised events</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5>Total Enrolments</h5>
+                    <h2 class="text-success">—</h2>
+                    <p class="text-muted">
+                        Enrolment totals coming soon
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5>Upcoming Events</h5>
+                    <h2 class="text-warning">@upcomingEvents</h2>
+                    <p class="text-muted">
+                        Events scheduled for today or later
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <h4 class="mb-3">My Events</h4>
+
+            @if (Model.Count == 0)
+            {
+                <p class="text-muted">
+                    No events to display yet.
+                </p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Event Name</th>
+                                <th>Date</th>
+                                <th>Location</th>
+                                <th>Distance</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var raceEvent in Model)
+                            {
+                                <tr>
+                                    <td>@raceEvent.Name</td>
+                                    <td>
+                                        @raceEvent.EventDate.ToString("dd MMM yyyy")
+                                    </td>
+                                    <td>@raceEvent.Location</td>
+                                    <td>@raceEvent.Distance km</td>
+                                    <td>
+                                        @if (raceEvent.EventDate >= DateTime.Today)
+                                        {
+                                            <span class="badge bg-success">
+                                                Upcoming
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                Completed
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+        </div>
+    </div>
+
+</div>
