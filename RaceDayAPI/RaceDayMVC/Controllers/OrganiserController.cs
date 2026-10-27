@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
+﻿
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using RaceDayMVC.Models;
 using RaceDayMVC.Services;
 
@@ -14,30 +15,23 @@ namespace RaceDayMVC.Controllers
             _apiService = apiService;
         }
 
+        // ORGANISER DASHBOARD
         public async Task<IActionResult> Index()
         {
             var userId = HttpContext.Session.GetInt32("UserID");
             var role = HttpContext.Session.GetString("Role");
 
-            // Check whether the user is logged in.
             if (userId == null)
-            {
                 return RedirectToAction("Login", "Account");
-            }
 
-            // Only organisers can access this dashboard.
             if (role != "Organiser")
-            {
                 return RedirectToAction("Index", "Home");
-            }
 
             try
             {
-                // Retrieve events from RaceDayAPI.
                 var events = await _apiService
                     .GetAsync<List<EventViewModel>>("api/Events");
 
-                // Display only events belonging to this organiser.
                 var myEvents = (events ?? new List<EventViewModel>())
                     .Where(e => e.OrganiserID == userId.Value)
                     .ToList();
@@ -53,6 +47,7 @@ namespace RaceDayMVC.Controllers
             }
         }
 
+        // OPEN CREATE EVENT FORM
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -93,9 +88,11 @@ namespace RaceDayMVC.Controllers
             return View(new CreateEventViewModel());
         }
 
+        // SAVE NEW EVENT
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateEventViewModel model)
+        public async Task<IActionResult> Create(
+            CreateEventViewModel model)
         {
             var userId = HttpContext.Session.GetInt32("UserID");
             var role = HttpContext.Session.GetString("Role");
@@ -151,7 +148,7 @@ namespace RaceDayMVC.Controllers
                 var eventTypes = await _apiService
                     .GetAsync<List<EventTypeViewModel>>("api/EventTypes");
 
-                ViewBag.EventTypes = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
+                ViewBag.EventTypes = new SelectList(
                     eventTypes ?? new List<EventTypeViewModel>(),
                     "EventTypeID",
                     "TypeName",
@@ -160,7 +157,7 @@ namespace RaceDayMVC.Controllers
             }
             catch (HttpRequestException)
             {
-                ViewBag.EventTypes = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(
+                ViewBag.EventTypes = new SelectList(
                     new List<EventTypeViewModel>(),
                     "EventTypeID",
                     "TypeName"
@@ -168,6 +165,143 @@ namespace RaceDayMVC.Controllers
             }
 
             return View(model);
+        }
+
+        // OPEN EDIT EVENT FORM
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var userId = HttpContext.Session.GetInt32("UserID");
+            var role = HttpContext.Session.GetString("Role");
+
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            if (role != "Organiser")
+                return RedirectToAction("Index", "Home");
+
+            try
+            {
+                var raceEvent = await _apiService
+                    .GetAsync<EventViewModel>(
+                        $"api/Events/{id}");
+
+                if (raceEvent == null)
+                    return NotFound();
+
+                if (raceEvent.OrganiserID != userId.Value)
+                    return Forbid();
+
+                var eventTypes = await _apiService
+                    .GetAsync<List<EventTypeViewModel>>(
+                        "api/EventTypes");
+
+                ViewBag.EventTypes = new SelectList(
+                    eventTypes ?? new List<EventTypeViewModel>(),
+                    "EventTypeID",
+                    "TypeName",
+                    raceEvent.EventTypeID
+                );
+
+                return View(raceEvent);
+            }
+            catch (HttpRequestException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to load event details from RaceDay API.";
+
+                return RedirectToAction("Index");
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, EventViewModel model)
+        {
+            var userId = HttpContext.Session.GetInt32("UserID");
+            var role = HttpContext.Session.GetString("Role");
+
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            if (role != "Organiser")
+                return RedirectToAction("Index", "Home");
+
+            if (id != model.EventID)
+                return BadRequest();
+
+            try
+            {
+                // Retrieve the original event from the API.
+                var existingEvent = await _apiService
+                    .GetAsync<EventViewModel>($"api/Events/{id}");
+
+                if (existingEvent == null)
+                    return NotFound();
+
+                // Only the owner can edit this event.
+                if (existingEvent.OrganiserID != userId.Value)
+                    return Forbid();
+
+                if (ModelState.IsValid)
+                {
+                    var updatedEvent = new
+                    {
+                        EventID = existingEvent.EventID,
+                        OrganiserID = existingEvent.OrganiserID,
+                        EventTypeID = model.EventTypeID,
+                        Name = model.Name,
+                        Description = model.Description,
+                        EventDate = model.EventDate,
+                        Location = model.Location,
+                        Distance = model.Distance
+                    };
+
+                    using var response = await _apiService
+                        .PutAsync($"api/Events/{id}", updatedEvent);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        TempData["SuccessMessage"] =
+                            "Event updated successfully!";
+
+                        return RedirectToAction("Index");
+                    }
+
+                    ModelState.AddModelError(
+                        "",
+                        "Unable to update the event. Please check your details."
+                    );
+                }
+
+                // Reload event types if validation fails.
+                var eventTypes = await _apiService
+                    .GetAsync<List<EventTypeViewModel>>("api/EventTypes");
+
+                ViewBag.EventTypes = new SelectList(
+                    eventTypes ?? new List<EventTypeViewModel>(),
+                    "EventTypeID",
+                    "TypeName",
+                    model.EventTypeID
+                );
+
+                return View(model);
+            }
+            catch (HttpRequestException)
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Unable to connect to RaceDay API."
+                );
+
+                ViewBag.EventTypes = new SelectList(
+                    new List<EventTypeViewModel>(),
+                    "EventTypeID",
+                    "TypeName"
+                );
+
+                return View(model);
+            }
         }
 
     }

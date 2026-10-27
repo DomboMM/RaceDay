@@ -84,6 +84,7 @@
                                 <th>Location</th>
                                 <th>Distance</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
 
@@ -110,6 +111,14 @@
                                                 Completed
                                             </span>
                                         }
+                                    </td>
+                                    <td>
+                                        <a asp-controller="Organiser"
+                                           asp-action="Edit"
+                                           asp-route-id="@raceEvent.EventID"
+                                           class="btn btn-warning btn-sm">
+                                            Edit
+                                        </a>
                                     </td>
                                 </tr>
                             }
