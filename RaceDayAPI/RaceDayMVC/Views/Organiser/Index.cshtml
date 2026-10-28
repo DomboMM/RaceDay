@@ -112,6 +112,7 @@
                                             </span>
                                         }
                                     </td>
+
                                     <td>
                                         <a asp-controller="Organiser"
                                            asp-action="Edit"
@@ -119,7 +120,23 @@
                                            class="btn btn-warning btn-sm">
                                             Edit
                                         </a>
+
+                                        <form asp-controller="Organiser"
+                                              asp-action="Delete"
+                                              asp-route-id="@raceEvent.EventID"
+                                              method="post"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Are you sure you want to delete this event?');">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="btn btn-danger btn-sm">
+                                                Delete
+                                            </button>
+                                        </form>
                                     </td>
+
                                 </tr>
                             }
                         </tbody>

@@ -304,5 +304,52 @@ namespace RaceDayMVC.Controllers
             }
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var userId = HttpContext.Session.GetInt32("UserID");
+            var role = HttpContext.Session.GetString("Role");
+
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            if (role != "Organiser")
+                return RedirectToAction("Index", "Home");
+
+            try
+            {
+                var raceEvent = await _apiService
+                    .GetAsync<EventViewModel>($"api/Events/{id}");
+
+                if (raceEvent == null)
+                    return NotFound();
+
+                if (raceEvent.OrganiserID != userId.Value)
+                    return Forbid();
+
+                using var response = await _apiService
+                    .DeleteAsync($"api/Events/{id}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] =
+                        "Event deleted successfully!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] =
+                        "Unable to delete the event.";
+                }
+            }
+            catch (HttpRequestException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to connect to RaceDay API.";
+            }
+
+            return RedirectToAction("Index");
+        }
+
     }
 }
