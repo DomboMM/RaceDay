@@ -48,6 +48,7 @@
                                 <th>Event ID</th>
                                 <th>Category Name</th>
                                 <th>Category Type</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
 
@@ -59,6 +60,14 @@
                                     <td>@category.EventID</td>
                                     <td>@category.CategoryName</td>
                                     <td>@category.CategoryType</td>
+                                    <td>
+                                        <a asp-controller="Categories"
+                                           asp-action="Edit"
+                                           asp-route-id="@category.CategoryID"
+                                           class="btn btn-warning btn-sm">
+                                            Edit
+                                        </a>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
