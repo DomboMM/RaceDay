@@ -298,8 +298,19 @@ namespace RaceDayAPI.Controllers
                     "You can only delete categories from your own events.");
             }
 
+
+            bool hasEnrolments = await _context.Enrolments
+                .AnyAsync(e => e.CategoryID == id);
+
+            if (hasEnrolments)
+            {
+                return Conflict(
+                    "This category cannot be deleted because participants are already enrolled.");
+            }
+
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
+
 
             return NoContent();
         }

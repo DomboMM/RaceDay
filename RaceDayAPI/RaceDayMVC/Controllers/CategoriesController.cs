@@ -339,5 +339,51 @@ namespace RaceDayMVC.Controllers
                 return View(model);
             }
         }
+
+        // DELETE CATEGORY THROUGH RACEDAY API
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var userId = HttpContext.Session.GetInt32("UserID");
+            var role = HttpContext.Session.GetString("Role");
+
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            if (role != "Organiser")
+                return RedirectToAction("Index", "Home");
+
+            try
+            {
+                using var response = await _apiService
+                    .DeleteAsync($"api/Categories/{id}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    TempData["SuccessMessage"] =
+                        "Category deleted successfully!";
+                }
+                else if (response.StatusCode ==
+                         System.Net.HttpStatusCode.Conflict)
+                {
+                    TempData["ErrorMessage"] =
+                        "This category cannot be deleted because participants are already enrolled.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] =
+                        "Unable to delete category. Please check your permissions.";
+                }
+            }
+            catch (HttpRequestException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to connect to RaceDay API.";
+            }
+
+            return RedirectToAction("Index");
+        }
+
     }
 }
