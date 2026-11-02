@@ -22,14 +22,10 @@ namespace RaceDayMVC.Controllers
             var role = HttpContext.Session.GetString("Role");
 
             if (userId == null)
-            {
                 return RedirectToAction("Login", "Account");
-            }
 
             if (role != "Participant")
-            {
                 return RedirectToAction("Index", "Home");
-            }
 
             try
             {
@@ -51,6 +47,44 @@ namespace RaceDayMVC.Controllers
                     "Unable to load your enrolled events from RaceDay API.";
 
                 return View(new List<EnrolmentViewModel>());
+            }
+        }
+
+        // DISPLAY PARTICIPANT RACE RESULTS
+        [HttpGet]
+        public async Task<IActionResult> MyResults()
+        {
+            var userId = HttpContext.Session.GetInt32("UserID");
+            var role = HttpContext.Session.GetString("Role");
+
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            if (role != "Participant")
+                return RedirectToAction("Index", "Home");
+
+            try
+            {
+                var results = await _apiService
+                    .GetAsync<List<ResultViewModel>>(
+                        "api/Results");
+
+                var myResults =
+                    (results ?? new List<ResultViewModel>())
+                    .Where(r =>
+                        r.Enrolment != null &&
+                        r.Enrolment.ParticipantID == userId.Value)
+                    .OrderBy(r => r.FinishingPosition)
+                    .ToList();
+
+                return View(myResults);
+            }
+            catch (HttpRequestException)
+            {
+                ViewBag.ErrorMessage =
+                    "Unable to load your race results from RaceDay API.";
+
+                return View(new List<ResultViewModel>());
             }
         }
     }
