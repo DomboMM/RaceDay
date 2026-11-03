@@ -15,7 +15,9 @@ namespace RaceDayMVC.Controllers
         }
 
 
-        // DISPLAY ORGANISER RESULTS PAGE
+     
+
+        // DISPLAY ORGANISER ENROLMENTS AND RESULTS
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -30,9 +32,19 @@ namespace RaceDayMVC.Controllers
 
             try
             {
+                // GET ORGANISER ENROLMENTS
                 var enrolments = await _apiService
                     .GetAsync<List<EnrolmentViewModel>>(
                         "api/Enrolments");
+
+                // GET RECORDED RESULTS
+                var results = await _apiService
+                    .GetAsync<List<ResultViewModel>>(
+                        "api/Results");
+
+                // PASS RESULTS TO THE VIEW
+                ViewBag.RecordedResults =
+                    results ?? new List<ResultViewModel>();
 
                 return View(
                     enrolments ?? new List<EnrolmentViewModel>());
@@ -40,11 +52,15 @@ namespace RaceDayMVC.Controllers
             catch (HttpRequestException)
             {
                 ViewBag.ErrorMessage =
-                    "Unable to load enrolments from the RaceDay API.";
+                    "Unable to load enrolments or results from the RaceDay API.";
+
+                ViewBag.RecordedResults =
+                    new List<ResultViewModel>();
 
                 return View(new List<EnrolmentViewModel>());
             }
         }
+
 
         // DISPLAY RECORD RESULT FORM
         [HttpGet]

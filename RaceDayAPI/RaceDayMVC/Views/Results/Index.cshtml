@@ -2,6 +2,10 @@
 
 @{
     ViewData["Title"] = "Manage Results";
+
+    var recordedResults =
+        ViewBag.RecordedResults as List<RaceDayMVC.Models.ResultViewModel>
+        ?? new List<RaceDayMVC.Models.ResultViewModel>();
 }
 
 <div class="container mt-4">
@@ -22,18 +26,17 @@
         </div>
     }
 
-
-    <p class="text-muted">
-        View enrolled participants and manage
-        their race results.
-    </p>
-
     @if (ViewBag.ErrorMessage != null)
     {
         <div class="alert alert-danger">
             @ViewBag.ErrorMessage
         </div>
     }
+
+    <p class="text-muted">
+        View enrolled participants and their recorded
+        finishing times and positions.
+    </p>
 
     @if (Model.Count == 0)
     {
@@ -52,7 +55,8 @@
                         <th>Participant ID</th>
                         <th>Event</th>
                         <th>Category</th>
-                        <th>Enrolment Date</th>
+                        <th>Finish Time</th>
+                        <th>Position</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -60,24 +64,48 @@
                 <tbody>
                     @foreach (var enrolment in Model)
                     {
+                        var result = recordedResults
+                            .FirstOrDefault(r =>
+                                r.EnrolmentID == enrolment.EnrolmentID);
+
                         <tr>
                             <td>@enrolment.EnrolmentID</td>
+
                             <td>@enrolment.ParticipantID</td>
+
                             <td>@enrolment.Event?.Name</td>
+
                             <td>@enrolment.Category?.CategoryName</td>
-                            <td>
-                                @enrolment.EnrolmentDate.ToString("dd MMM yyyy")
-                            </td>
 
-                            <td>
-                                <a asp-controller="Results"
-                                   asp-action="Create"
-                                   asp-route-enrolmentId="@enrolment.EnrolmentID"
-                                   class="btn btn-primary btn-sm">
-                                    Record Result
-                                </a>
-                            </td>
+                            @if (result != null)
+                            {
+                                <td>
+                                    @result.FinishTime.ToString(@"hh\:mm\:ss")
+                                </td>
 
+                                <td>@result.FinishingPosition</td>
+
+                                <td>
+                                    <span class="badge bg-success">
+                                        Recorded
+                                    </span>
+                                </td>
+                            }
+                            else
+                            {
+                                <td>Not recorded</td>
+
+                                <td>-</td>
+
+                                <td>
+                                    <a asp-controller="Results"
+                                       asp-action="Create"
+                                       asp-route-enrolmentId="@enrolment.EnrolmentID"
+                                       class="btn btn-primary btn-sm">
+                                        Record Result
+                                    </a>
+                                </td>
+                            }
                         </tr>
                     }
                 </tbody>
