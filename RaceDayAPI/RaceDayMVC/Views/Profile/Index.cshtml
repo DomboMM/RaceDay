@@ -1,0 +1,79 @@
+﻿@model RaceDayMVC.Models.ProfileViewModel
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="container mt-4">
+
+    <h2 class="fw-bold mb-3">My Profile</h2>
+
+    <p class="text-muted">
+        View your RaceDay account information.
+    </p>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.ErrorMessage
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+
+                <h4 class="mb-4">Personal Information</h4>
+
+                <div class="mb-3">
+                    <strong>First Name:</strong>
+                    <p>@Model.FirstName</p>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Last Name:</strong>
+                    <p>@Model.LastName</p>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Email Address:</strong>
+                    <p>@Model.Email</p>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Phone Number:</strong>
+                    <p>
+                        @(string.IsNullOrWhiteSpace(Model.PhoneNumber)
+                            ? "Not provided"
+                            : Model.PhoneNumber)
+                    </p>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Account Role:</strong>
+                    <p>@Model.Role</p>
+                </div>
+
+            </div>
+        </div>
+    }
+
+   
+    <div class="d-flex gap-2 mt-3">
+
+        <a asp-controller="Profile"
+           asp-action="Edit"
+           class="btn btn-primary">
+            Edit Profile
+        </a>
+
+        <a asp-controller="Home"
+           asp-action="Index"
+           class="btn btn-secondary">
+            Back to Home
+        </a>
+
+    </div>
+
+
+</div>
