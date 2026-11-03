@@ -34,7 +34,8 @@ namespace RaceDayAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<IEnumerable<Result>>> GetResults()
+
+        public async Task<IActionResult> GetResults()
         {
             int? userId = HttpContext.Session.GetInt32("UserID");
             string? role = HttpContext.Session.GetString("Role");
@@ -47,10 +48,23 @@ namespace RaceDayAPI.Controllers
             if (role == "Participant")
             {
                 var participantResults = await _context.Results
-                    .Include(r => r.Enrolment)
                     .Where(r =>
                         r.Enrolment != null &&
                         r.Enrolment.ParticipantID == userId.Value)
+                    .Select(r => new
+                    {
+                        r.ResultID,
+                        r.EnrolmentID,
+                        r.FinishTime,
+                        r.FinishingPosition,
+                        Enrolment = new
+                        {
+                            r.Enrolment!.EnrolmentID,
+                            r.Enrolment.ParticipantID,
+                            r.Enrolment.EventID,
+                            r.Enrolment.CategoryID
+                        }
+                    })
                     .ToListAsync();
 
                 return Ok(participantResults);
@@ -59,12 +73,24 @@ namespace RaceDayAPI.Controllers
             if (role == "Organiser")
             {
                 var organiserResults = await _context.Results
-                    .Include(r => r.Enrolment)
-                    .ThenInclude(e => e!.Event)
                     .Where(r =>
                         r.Enrolment != null &&
                         r.Enrolment.Event != null &&
                         r.Enrolment.Event.OrganiserID == userId.Value)
+                    .Select(r => new
+                    {
+                        r.ResultID,
+                        r.EnrolmentID,
+                        r.FinishTime,
+                        r.FinishingPosition,
+                        Enrolment = new
+                        {
+                            r.Enrolment!.EnrolmentID,
+                            r.Enrolment.ParticipantID,
+                            r.Enrolment.EventID,
+                            r.Enrolment.CategoryID
+                        }
+                    })
                     .ToListAsync();
 
                 return Ok(organiserResults);
@@ -74,6 +100,7 @@ namespace RaceDayAPI.Controllers
                 StatusCodes.Status403Forbidden,
                 "Invalid user role.");
         }
+
 
         /// <summary>
         /// Gets a specific race result.
@@ -227,10 +254,18 @@ namespace RaceDayAPI.Controllers
             _context.Results.Add(result);
             await _context.SaveChangesAsync();
 
+
             return CreatedAtAction(
                 nameof(GetResult),
                 new { id = result.ResultID },
-                result);
+                new
+                {
+                    result.ResultID,
+                    result.EnrolmentID,
+                    result.FinishTime,
+                    result.FinishingPosition
+                });
+
         }
 
         /// <summary>

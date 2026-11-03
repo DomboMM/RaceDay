@@ -1,0 +1,95 @@
+﻿@model List<RaceDayMVC.Models.EnrolmentViewModel>
+
+@{
+    ViewData["Title"] = "Manage Results";
+}
+
+<div class="container mt-4">
+
+    <h2 class="fw-bold mb-3">Manage Race Results</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+
+    <p class="text-muted">
+        View enrolled participants and manage
+        their race results.
+    </p>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger">
+            @ViewBag.ErrorMessage
+        </div>
+    }
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-info">
+            No participant enrolments are available yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>Enrolment ID</th>
+                        <th>Participant ID</th>
+                        <th>Event</th>
+                        <th>Category</th>
+                        <th>Enrolment Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var enrolment in Model)
+                    {
+                        <tr>
+                            <td>@enrolment.EnrolmentID</td>
+                            <td>@enrolment.ParticipantID</td>
+                            <td>@enrolment.Event?.Name</td>
+                            <td>@enrolment.Category?.CategoryName</td>
+                            <td>
+                                @enrolment.EnrolmentDate.ToString("dd MMM yyyy")
+                            </td>
+
+                            <td>
+                                <a asp-controller="Results"
+                                   asp-action="Create"
+                                   asp-route-enrolmentId="@enrolment.EnrolmentID"
+                                   class="btn btn-primary btn-sm">
+                                    Record Result
+                                </a>
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+        </div>
+    }
+
+    <a asp-controller="Organiser"
+       asp-action="Index"
+       class="btn btn-secondary mt-3">
+        Back to Dashboard
+    </a>
+
+</div>
