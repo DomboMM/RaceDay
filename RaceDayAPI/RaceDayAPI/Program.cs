@@ -1,8 +1,30 @@
+
+using Azure.Identity;
+using Azure.Storage.Blobs;
 using Microsoft.EntityFrameworkCore;
 using RaceDayAPI.Data;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Azure Blob Storage
+var storageAccountName =
+    builder.Configuration["AzureStorage:AccountName"];
+
+if (string.IsNullOrWhiteSpace(storageAccountName))
+{
+    throw new InvalidOperationException(
+        "Azure Storage account name is not configured.");
+}
+
+var blobServiceUri = new Uri(
+    $"https://{storageAccountName}.blob.core.windows.net");
+
+builder.Services.AddSingleton(
+    new BlobServiceClient(
+        blobServiceUri,
+        new DefaultAzureCredential()));
+
 
 // ==========================================
 // CONTROLLERS
