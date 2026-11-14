@@ -548,7 +548,8 @@ The GitHub Actions workflow in `.github/workflows/ci.yml` was updated so that it
 
 **Latest successful build:**
 
-> [PASTE THE PART 3 GREEN GITHUB ACTIONS SCREENSHOT HERE, for example `![ci-part3-success](docs/ci-part3-success.png)`]
+> [<img width="1021" height="465" alt="image" src="https://github.com/user-attachments/assets/639c5f48-a02b-4079-a4d7-9f94cd96529a" />
+]
 
 ## Part 3 Test Accounts
 
